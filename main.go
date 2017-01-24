@@ -3,11 +3,37 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
+	"syscall"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 )
+
+const TempFile = "/home/codes/repo/dockrun/tmp"
+
+type DriverSet struct {
+	Name string `json:"name"`
+	Id   string `json:"-"`
+}
+
+type IQuery interface {
+	Query() string
+}
+
+type Query struct {
+	Content string
+}
+
+func NewQuery(c string) *Query {
+	return &Query{Content: c}
+}
+
+func (q *Query) Query() string {
+	return q.Content
+}
 
 func connect() (*docker.Client, error) {
 
@@ -103,6 +129,52 @@ func collectRoots(images *[]docker.APIImages) []docker.APIImages {
 	return roots
 }
 
+type Dvil struct {
+	Type bool
+	Flag int
+}
+
+type DevilIf interface {
+}
+
+func NewDvil() DevilIf {
+	return &Dvil{Type: true, Flag: 0}
+}
+
 func main() {
-	listImages()
+	//	listImages()
+	var buff syscall.Statfs_t
+
+	d := NewDvil()
+
+	fmt.Printf("%T\n", d)
+
+	str := "18 62 0:17 / /sys rw,nosuid,nodev,noexec,relatime shared:6 - sysfs sysfs rw,seclabel"
+	//	str := "6 - sysfs sysfs rw,seclabel"
+
+	index := strings.Index(str, " - ")
+	fmt.Println(strings.Fields(str[index+3:]))
+
+	if err := syscall.Statfs("/root", &buff); err != nil {
+		fmt.Println(err)
+	}
+
+	ds := DriverSet{Name: "dm", Id: "123456"}
+
+	cd, _ := json.Marshal(ds)
+
+	fmt.Println(string(cd))
+
+	fmt.Println("fs type:", buff.Type)
+
+	q := NewQuery("hello")
+	var iq IQuery
+
+	iq = q
+
+	if qr, ok := iq.(*Query); ok {
+		fmt.Println(qr.Query())
+	} else {
+		fmt.Println(ok)
+	}
 }
